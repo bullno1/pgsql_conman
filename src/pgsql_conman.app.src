@@ -1,0 +1,12 @@
+{application, pgsql_conman, [
+	{description, "Connection manager for semiocast/pgsql"},
+	{vsn, "0.0.1"},
+	{registered, []},
+	{applications, [
+		kernel,
+		stdlib,
+		conman,
+		pgsql
+	]},
+	{env, []}
+]}.
