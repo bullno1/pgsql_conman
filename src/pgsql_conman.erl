@@ -4,7 +4,13 @@
 
 init(Args) -> {no_connection, Args}.
 
-connect({connection, _} = State) -> {ok, State};
+connect({connection, Connection} = State) ->
+	% Since semiocast's driver only reconnects lazily, try to do a simple query
+	% to check if it's really connected
+	case pgsql_connection:simple_query(<<"SELECT 1">>, Connection) of
+		{{select, 1}, [{1}]} -> {ok, State};
+		{error, Err} -> {{error, Err}, State}
+	end;
 connect({no_connection, Args}) ->
 	try
 		{ok, {connection, pgsql_connection:open(Args)}}
@@ -23,7 +29,7 @@ transaction(Fun, Args, {connection, Conn} = State) ->
 		{_, []} = pgsql_connection:simple_query(<<"COMMIT">>, Conn),
 		{ok, Result, State}
 	catch
-		badmatch:{error, closed} ->
+		error:{badmatch, {error, closed}} ->
 			{error, disconnected, State};
 		Class:Reason ->
 			{'rollback', []} = pgsql_connection:simple_query(<<"ROLLBACK">>, Conn),
